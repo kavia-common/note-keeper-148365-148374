@@ -7,19 +7,22 @@ const swaggerSpec = require('../swagger');
 // Initialize express app
 const app = express();
 
+// CORS for frontend at http://localhost:3000
 app.use(cors({
-  origin: '*',
+  origin: ['http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
 }));
 app.set('trust proxy', true);
-app.use('/docs', swaggerUi.serve, (req, res, next) => {
-  const host = req.get('host');           // may or may not include port
-  let protocol = req.protocol;          // http or https
 
+// Serve Swagger UI at /docs and dynamic servers based on host
+app.use('/docs', swaggerUi.serve, (req, res, next) => {
+  const host = req.get('host'); // may or may not include port
+  let protocol = req.protocol;  // http or https
   const actualPort = req.socket.localPort;
   const hasPort = host.includes(':');
-  
+
   const needsPort =
     !hasPort &&
     ((protocol === 'http' && actualPort !== 80) ||
@@ -29,13 +32,29 @@ app.use('/docs', swaggerUi.serve, (req, res, next) => {
 
   const dynamicSpec = {
     ...swaggerSpec,
-    servers: [
-      {
-        url: `${protocol}://${fullHost}`,
-      },
-    ],
+    servers: [{ url: `${protocol}://${fullHost}` }],
   };
   swaggerUi.setup(dynamicSpec)(req, res, next);
+});
+
+// Expose raw OpenAPI JSON at /openapi.json
+app.get('/openapi.json', (req, res) => {
+  const host = req.get('host');
+  let protocol = req.protocol;
+  const actualPort = req.socket.localPort;
+  const hasPort = host.includes(':');
+  const needsPort =
+    !hasPort &&
+    ((protocol === 'http' && actualPort !== 80) ||
+     (protocol === 'https' && actualPort !== 443));
+  const fullHost = needsPort ? `${host}:${actualPort}` : host;
+  protocol = req.secure ? 'https' : protocol;
+
+  const dynamicSpec = {
+    ...swaggerSpec,
+    servers: [{ url: `${protocol}://${fullHost}` }],
+  };
+  res.json(dynamicSpec);
 });
 
 // Parse JSON request body

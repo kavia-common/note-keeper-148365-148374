@@ -4,12 +4,16 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'My Express API',
+      title: 'Note Keeper API',
       version: '1.0.0',
-      description: 'A simple Express API documented with Swagger',
-    }
+      description: 'REST API for creating, listing, updating, and deleting notes.',
+    },
+    tags: [
+      { name: 'Notes', description: 'CRUD operations for notes' }
+    ],
   },
-  apis: ['./src/routes/*.js'], // Path to the API docs
+  // Scan all route files, including notes routes
+  apis: ['./src/routes/*.js'],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
